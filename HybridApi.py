@@ -474,26 +474,20 @@ class SpeedportHybridApi(object):
 		# 1) Get challenge
 		# POST 'challengev=' to login.json
 		try:
-			r = self._postRequest(loginJsonUri, data={'challengev': ''}, noSession=True)
+			r = self._getRequest('speedport.ip/html/login/index.html', noSession=True)
 		except Exception as e:
 			raise SpeedportHybridApi.RequestException('requesting login challenge failed', e)
 
 		# Parse response for challenge
 		try: 
-			res = self._parseJsonResponse(r.text, True)
+                        m = re.search(" +challenge = \"(.*?)\"", r.text)
+                        challenge = m.group(1)
 		except Exception as e:
 			raise SpeedportHybridApi.ApiException('parsing login challenge failed', e)
 
-		# Retrieve challenge value
-		try:
-			challenge = res['challengev'].Value
-		except Exception as e:
-			raise SpeedportHybridApi.ApiException('retrieving login challenge value failed', e)
-
 		# 2) Calculate response
 		response, salt = self._getChallengeResponse(pw, challenge)
-
-		loginReqData = {'showpw': 0, 'password': response}  # if 'showpw' = '1' then 'password_shadowed' = password
+		loginReqData = {'csrf_token' : 'nulltoken', 'challengev' : challenge, 'showpw': 0, 'password': response}  # if 'showpw' = '1' then 'password_shadowed' = password
 
 		# 3) Send response
 		try:
